@@ -6,6 +6,9 @@ using RetroVideoStore.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load connection string from environment variables
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -13,7 +16,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // Register services
 builder.Services.AddScoped<MovieService>();
