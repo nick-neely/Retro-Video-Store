@@ -10,13 +10,10 @@ RUN dotnet restore "./RetroVideoStore.csproj"
 COPY . .
 RUN dotnet publish "RetroVideoStore.csproj" -c Release -o /app/publish
 
-# Stage 2: Apply migrations and run the app
+# Stage 2: Set up the runtime environment and run the app
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-
-# Apply migrations
-RUN dotnet ef database update --no-build
 
 # Run the application
 ENTRYPOINT ["dotnet", "RetroVideoStore.dll"]
