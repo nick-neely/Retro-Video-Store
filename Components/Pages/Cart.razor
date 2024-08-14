@@ -1,0 +1,97 @@
+﻿@page "/cart"
+@using RetroVideoStore.Models
+@using RetroVideoStore.Services
+@inject CartService CartService
+@inject OrderService OrderService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Your Cart</PageTitle>
+<h1>Your Cart</h1>
+<div class="row">
+    @if (!isInitialized)
+    {
+    <p><em>Loading...</em></p>
+    }
+    else if (cartItems == null || !cartItems.Any())
+    {
+    <p>Your cart is empty.</p>
+    }
+    else
+    {
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Format</th>
+            <th>Quantity</th>
+            <th>Price</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in cartItems)
+        {
+        <tr>
+            <td>@item.Movie.Title</td>
+            <td>@item.Movie.Description</td>
+            <td>@item.Movie.Format</td>
+            <td>@item.Quantity</td>
+            <td>@((item.Quantity * CartService.GetPriceForFormat(item.Movie.Format)).ToString("C"))</td>
+        </tr>
+        }
+        </tbody>
+    </table>
+
+    <EditForm Model="order" OnValidSubmit="PlaceOrder">
+        <DataAnnotationsValidator />
+
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="customerName" @bind="order.CustomerName" placeholder="Customer Name">
+            <label for="customerName" class="mx-2">Name</label>
+            <ValidationMessage For="@(() => order.CustomerName)" />
+        </div>
+        <div class="form-floating mb-3">
+            <input type="email" class="form-control" id="customerEmail" @bind="order.CustomerEmail" placeholder="Customer Email">
+            <label for="customerEmail" class="mx-2">Email</label>
+            <ValidationMessage For="@(() => order.CustomerEmail)" />
+        </div>
+
+        <p><strong>Total Price:</strong> @CartService.GetTotalPrice().ToString("C")</p>
+        <button class="btn btn-success" type="submit">Place Order</button>
+    </EditForm>
+    }
+</div>
+
+@code {
+    private List<CartItem> cartItems; // CartItem holds movie and quantity details
+    private Order order = new Order();
+    private bool isInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CartService.LoadCartFromLocalStorage();
+            cartItems = CartService.GetCartItems();
+            isInitialized = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PlaceOrder()
+    {
+        order.OrderDate = DateTime.UtcNow;
+        order.TotalPrice = CartService.GetTotalPrice();
+        order.OrderDetails = cartItems.Select(item => new RetroVideoStore.Models.OrderDetail
+        {
+            MovieId = item.Movie.Id,
+            Quantity = item.Quantity
+        }).ToList();
+
+        await OrderService.CreateOrderAsync(order);
+        CartService.ClearCart();
+
+        NavigationManager.NavigateTo($"/order-confirmation/{order.OrderID}");
+    }
+}

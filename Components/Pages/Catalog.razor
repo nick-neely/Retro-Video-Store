@@ -1,0 +1,151 @@
+﻿@page "/catalog"
+@using RetroVideoStore.Models
+@using RetroVideoStore.Services
+@inject MovieService MovieService
+@inject CartService CartService
+@rendermode InteractiveServer
+
+<PageTitle>Catalog</PageTitle>
+<h1>Movie Catalog</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Filters and Sorting
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Search by title" @oninput="UpdateSearchQuery" />
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" @onchange="FilterByFormat">
+                    <option value="">All Formats</option>
+                    <option value="DVD">DVD</option>
+                    <option value="VHS">VHS</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" @onchange="SortByPrice">
+                    <option value="asc">Price: Low to High</option>
+                    <option value="desc">Price: High to Low</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    @if (movies == null)
+    {
+    <p><em>Loading...</em></p>
+    }
+    else
+    {
+    @foreach (var alert in currentAlerts)
+    {
+    <div class="alert alert-success d-flex align-items-center alert-dismissible fade show" role="alert">
+        <svg class="bi flex-shrink-0 me-2 small-icon" role="img" aria-label="Success:"><use xlink:href="#check-circle-fill"/></svg>
+        @alert
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    }
+
+    @foreach (var movie in filteredMovies)
+        {
+        <div class="col-md-4 d-flex align-items-stretch">
+            <div class="card mb-4 shadow-sm d-flex flex-column">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">@movie.Title</h5>
+                    <p class="card-text">@movie.Description</p>
+                    <p class="card-text"><strong>Format:</strong> @movie.Format</p>
+                    <p class="card-text"><strong>Price:</strong> @CartService.GetPriceForFormat(movie.Format).ToString("C")</p>
+                    <div class="mt-auto">
+                        <button class="btn btn-primary" @onclick="() => AddToCart(movie)">Add to Cart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Movie> movies;
+    private List<Movie> filteredMovies;
+    private Queue<string> alertQueue = new Queue<string>();
+    private List<string> currentAlerts = new List<string>();
+    private const int MaxAlerts = 3;
+    private string selectedFormat = "";
+    private string sortOrder = "asc";
+    private string searchQuery = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        movies = await MovieService.GetMoviesAsync();
+        FilterAndSortMovies();
+    }
+    
+    private void UpdateSearchQuery(ChangeEventArgs e)
+    {
+        searchQuery = e.Value.ToString();
+        FilterAndSortMovies();
+    }
+
+    private void FilterByFormat(ChangeEventArgs e)
+    {
+        selectedFormat = e.Value.ToString();
+        FilterAndSortMovies();
+    }
+
+    private void SortByPrice(ChangeEventArgs e)
+    {
+        sortOrder = e.Value.ToString();
+        FilterAndSortMovies();
+    }
+
+    private void FilterAndSortMovies()
+    {
+        filteredMovies = movies;
+
+        if (!string.IsNullOrEmpty(selectedFormat))
+        {
+            filteredMovies = filteredMovies.Where(m => m.Format == selectedFormat).ToList();
+        }
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            filteredMovies = filteredMovies.Where(m => m.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        if (sortOrder == "asc")
+        {
+            filteredMovies = filteredMovies.OrderBy(m => CartService.GetPriceForFormat(m.Format)).ToList();
+        }
+        else
+        {
+            filteredMovies = filteredMovies.OrderByDescending(m => CartService.GetPriceForFormat(m.Format)).ToList();
+        }
+    }
+
+    private async void AddToCart(Movie movie)
+    {
+        CartService.AddToCart(movie);
+        var alertMessage = $"{movie.Title} added to cart!";
+        alertQueue.Enqueue(alertMessage);
+        ShowNextAlert();
+    }
+
+    private async void ShowNextAlert()
+    {
+        if (currentAlerts.Count < MaxAlerts && alertQueue.Count > 0)
+        {
+            var nextAlert = alertQueue.Dequeue();
+            currentAlerts.Add(nextAlert);
+            StateHasChanged();
+            await Task.Delay(3000); // Show alert for 3 seconds
+            currentAlerts.Remove(nextAlert);
+            StateHasChanged();
+            ShowNextAlert();
+        }
+    }
+}

@@ -1,0 +1,38 @@
+﻿@page "/order-confirmation/{orderID:guid}"
+@using RetroVideoStore.Models
+@using RetroVideoStore.Services
+@inject OrderService OrderService
+
+<h1>Order Confirmation</h1>
+
+@if (order == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <p>Thank you for your order, @order.CustomerName!</p>
+    <p>Order ID: @order.OrderID</p>
+    <p>Order Date: @order.OrderDate.ToShortDateString()</p>
+    <p>Total Price: @order.TotalPrice.ToString("C")</p>
+
+    <h4>Order Details:</h4>
+    <ul>
+        @foreach (var detail in order.OrderDetails)
+        {
+        <li>@($"{detail.Movie.Title} (x{detail.Quantity})")</li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public Guid orderID { get; set; }
+
+    private Order order;
+
+    protected override async Task OnInitializedAsync()
+    {
+        order = await OrderService.GetOrderByOrderIdAsync(orderID);
+    }
+}

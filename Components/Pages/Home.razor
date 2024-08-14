@@ -1,0 +1,46 @@
+﻿@page "/"
+@using RetroVideoStore.Models
+@using RetroVideoStore.Services
+@inject MovieService MovieService
+@rendermode InteractiveServer
+
+<PageTitle>Home</PageTitle>
+
+<div class="container mt-5">
+    <div class="jumbotron bg-dark text-white p-5 rounded">
+        <h1 class="display-4">Welcome to Retro Video Store!</h1>
+        <p class="lead">Your one-stop shop for all your favorite classic movies. Browse our extensive catalog, filter by format, and sort by price to find the perfect movie for your next movie night.</p>
+        <hr class="my-4">
+        <p>Use the search box to find movies by title, and add them to your cart with a single click. Enjoy a seamless and nostalgic shopping experience with Retro Video Store.</p>
+        <a class="btn btn-primary btn-lg" href="/catalog" role="button">Browse Catalog</a>
+    </div>
+
+    <h2 class="mt-5 mb-4 text-center">Featured Movies</h2>
+    <div class="row mt-5">
+        @if (showcaseMovies != null)
+        {
+        @foreach (var movie in showcaseMovies)
+        {
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 featured-card">
+                <div class="card-body">
+                    <h5 class="card-title">@movie.Title</h5>
+                    <p class="card-text">@movie.Description</p>
+                </div>
+            </div>
+        </div>
+        }
+        }
+    </div>
+</div>
+
+@code {
+    private List<Movie> showcaseMovies;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var movies = await MovieService.GetMoviesAsync();
+        var random = new Random();
+        showcaseMovies = movies.OrderBy(x => random.Next()).Take(3).ToList();
+    }
+}

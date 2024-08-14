@@ -1,0 +1,67 @@
+﻿@page "/order-detail/{orderID:guid}"
+@using RetroVideoStore.Models
+@using RetroVideoStore.Services
+@inject OrderService OrderService
+@inject CartService CartService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Order Details</PageTitle>
+<h1>Order Details</h1>
+
+@if (order == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Order ID: @order.OrderID
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Customer Information</h5>
+            <p class="card-text"><strong>Name:</strong> @order.CustomerName</p>
+            <p class="card-text"><strong>Email:</strong> @order.CustomerEmail</p>
+            <p class="card-text"><strong>Order Date:</strong> @order.OrderDate.ToShortDateString()</p>
+            <p class="card-text"><strong>Total Price:</strong> @order.TotalPrice.ToString("C")</p>
+
+            <h5 class="card-title">Order Details</h5>
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Format</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var detail in order.OrderDetails)
+                    {
+                        <tr>
+                            <td>@detail.Movie.Title</td>
+                            <td>@detail.Movie.Description</td>
+                            <td>@detail.Movie.Format</td>
+                            <td>@detail.Quantity</td>
+                            <td>@((detail.Quantity * CartService.GetPriceForFormat(detail.Movie.Format)).ToString("C"))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid orderID { get; set; }
+
+    private Order order;
+
+    protected override async Task OnInitializedAsync()
+    {
+        order = await OrderService.GetOrderByOrderIdAsync(orderID);
+    }
+}

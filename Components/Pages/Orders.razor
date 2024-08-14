@@ -1,0 +1,136 @@
+﻿@page "/orders"
+@using RetroVideoStore.Models
+@using RetroVideoStore.Services
+@inject OrderService OrderService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Order History</PageTitle>
+<h1>Order History</h1>
+<div class="card mb-4">
+    <div class="card-header">
+        Filters and Sorting
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Search by customer name or order ID" @oninput="UpdateSearchQuery" />
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" @onchange="SortByOrderDate" aria-label="Sort by order date">
+                    <option value="asc">Order Date: Oldest to Newest</option>
+                    <option value="desc">Order Date: Newest to Oldest</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" @onchange="SortByTotalPrice" aria-label="Sort by total price">
+                    <option value="asc">Total Price: Low to High</option>
+                    <option value="desc">Total Price: High to Low</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    @if (filteredOrders == null)
+    {
+    <p><em>Loading...</em></p>
+    }
+    else
+    {
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+        <tr>
+            <th>Order ID</th>
+            <th>Customer Name</th>
+            <th>Order Date</th>
+            <th>Total Price</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var order in filteredOrders)
+        {
+        <tr @onclick="() => NavigateToOrderDetail(order.OrderID)" style="cursor: pointer;">
+            <td>@order.OrderID</td>
+            <td>@order.CustomerName</td>
+            <td>@order.OrderDate.ToShortDateString()</td>
+            <td>@order.TotalPrice.ToString("C")</td>
+        </tr>
+        }
+        </tbody>
+    </table>
+    }
+</div>
+
+@code {
+    private List<Order> orders;
+    private List<Order> filteredOrders;
+    private string searchQuery = "";
+    private string orderDateSortOrder = "asc";
+    private string totalPriceSortOrder = "asc";
+
+    protected override async Task OnInitializedAsync()
+    {
+        orders = await OrderService.GetOrdersAsync();
+        FilterAndSortOrders();
+    }
+    private void UpdateSearchQuery(ChangeEventArgs e)
+    {
+        searchQuery = e.Value.ToString();
+        FilterAndSortOrders();
+    }
+
+    @code {
+        private void SortByOrderDate(ChangeEventArgs e)
+        {
+            orderDateSortOrder = e.Value.ToString();
+            if (orderDateSortOrder == "asc")
+            {
+                filteredOrders = filteredOrders.OrderBy(o => o.OrderDate).ToList();
+            }
+            else
+            {
+                filteredOrders = filteredOrders.OrderByDescending(o => o.OrderDate).ToList();
+            }
+        }
+    }
+
+    private void SortByTotalPrice(ChangeEventArgs e)
+    {
+        totalPriceSortOrder = e.Value.ToString();
+        FilterAndSortOrders();
+    }
+
+    private void FilterAndSortOrders()
+    {
+        filteredOrders = orders;
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            filteredOrders = filteredOrders.Where(o => o.CustomerName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || o.OrderID.ToString().Contains(searchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        if (orderDateSortOrder == "asc")
+        {
+            filteredOrders = filteredOrders.OrderBy(o => o.OrderDate).ToList();
+        }
+        else
+        {
+            filteredOrders = filteredOrders.OrderByDescending(o => o.OrderDate).ToList();
+        }
+
+        if (totalPriceSortOrder == "asc")
+        {
+            filteredOrders = filteredOrders.OrderBy(o => o.TotalPrice).ToList();
+        }
+        else
+        {
+            filteredOrders = filteredOrders.OrderByDescending(o => o.TotalPrice).ToList();
+        }
+    }
+    private void NavigateToOrderDetail(Guid orderID)
+    {
+        NavigationManager.NavigateTo($"/order-detail/{orderID}");
+    }
+}
