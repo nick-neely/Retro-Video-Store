@@ -29,7 +29,7 @@ namespace RetroVideoStore.Services
         {
             var order = await _context.Orders
                 .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Movie) // Ensure movies are included here
+                .ThenInclude(od => od.Movie)
                 .FirstOrDefaultAsync(o => o.OrderID == orderID);
 
             if (order == null)
