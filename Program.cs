@@ -1,10 +1,21 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using RetroVideoStore.Components;
 using RetroVideoStore.Data;
 using RetroVideoStore.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Set the default culture to "en-US"
+var defaultCulture = new CultureInfo("en-US");
+var localizationOptions = new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(defaultCulture),
+    SupportedCultures = new List<CultureInfo> { defaultCulture },
+    SupportedUICultures = new List<CultureInfo> { defaultCulture }
+};
 
 // Load connection string from environment variables
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -23,6 +34,13 @@ builder.Services.AddScoped<MovieService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<ProtectedLocalStorage>();
+
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.DefaultRequestCulture = new RequestCulture("en-US");
+    options.SupportedCultures = new List<CultureInfo> { defaultCulture };
+    options.SupportedUICultures = new List<CultureInfo> { defaultCulture };
+});
 
 var app = builder.Build();
 
