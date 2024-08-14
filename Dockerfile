@@ -6,8 +6,8 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["RetroVideoStore/RetroVideoStore.csproj", "RetroVideoStore/"]
-RUN dotnet restore "RetroVideoStore/RetroVideoStore.csproj"
+COPY ["RetroVideoStore.csproj", "RetroVideoStore/"]
+RUN dotnet restore "RetroVideoStore.csproj"
 COPY . .
 WORKDIR "/src/RetroVideoStore"
 RUN dotnet build "RetroVideoStore.csproj" -c Release -o /app/build
